@@ -45,7 +45,7 @@ exports.signin = (req, res) => {
       username: req.body.username,
     },
   })
-    .then((user) => {
+    .then(async (user) => {
       if (!user) {
         return res.status(404).send({ message: "User Not found." });
       }
@@ -62,17 +62,12 @@ exports.signin = (req, res) => {
         });
       }
 
-      console.log(user);
-
       var authorities = [];
-      user.getRoles().then((roles) => {
-        console.log(roles);
+      await user.getRoles().then((roles) => {
         for (let i = 0; i < roles.length; i++) {
           authorities.push("ROLE_" + roles[i].name.toUpperCase());
         }
       });
-
-      console.log(authorities);
 
       const signedUser = {
         id: user.id,
@@ -92,6 +87,7 @@ exports.signin = (req, res) => {
       });
     })
     .catch((err) => {
+      console.error(err);
       res.status(500).send({ message: err.message });
     });
 };

@@ -46,7 +46,11 @@ app.use(flash());
 app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
 async function assertDatabaseConnectionOk() {
   console.log(`Checking database connection...`);
