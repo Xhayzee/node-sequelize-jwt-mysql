@@ -39,55 +39,51 @@ exports.signup = (req, res) => {
     });
 };
 
-exports.signin = (req, res) => {
-  User.findOne({
-    where: {
-      username: req.body.username,
-    },
-  })
-    .then(async (user) => {
-      if (!user) {
-        return res.status(404).send({ message: "User Not found." });
-      }
-
-      var passwordIsValid = bcrypt.compareSync(
-        req.body.password,
-        user.password
-      );
-
-      if (!passwordIsValid) {
-        return res.status(401).send({
-          accessToken: null,
-          message: "Invalid Password!",
-        });
-      }
-
-      var authorities = [];
-      await user.getRoles().then((roles) => {
-        for (let i = 0; i < roles.length; i++) {
-          authorities.push("ROLE_" + roles[i].name.toUpperCase());
-        }
-      });
-
-      const signedUser = {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        roles: authorities,
-        createdAt: user.createdAt,
-      };
-
-      var token = jwt.sign({ ...signedUser }, secretKey, {
-        expiresIn: 86400, // 24 hours
-      });
-
-      res.status(200).send({
-        ...signedUser,
-        accessToken: `Bearer ${token}`,
-      });
-    })
-    .catch((err) => {
-      console.error(err);
-      res.status(500).send({ message: err.message });
+exports.signin = async (req, res) => {
+  try {
+    const user = await User.findOne({
+      where: {
+        username: req.body.username,
+      },
     });
+
+    if (!user) {
+      return res.status(404).json({ message: "User Not found." });
+    }
+
+    const passwordIsValid = bcrypt.compareSync(
+      req.body.password,
+      user.password
+    );
+
+    if (!passwordIsValid) {
+      return res.status(401).json({ message: "Invalid Password!" });
+    }
+
+    const authorities = [];
+    const roles = await user.getRoles();
+    for (let i = 0; i < roles.length; i++) {
+      authorities.push("ROLE_" + roles[i].name.toUpperCase());
+    }
+
+    const signedUser = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      roles: authorities,
+      createdAt: user.createdAt,
+    };
+
+    const token = jwt.sign({ ...signedUser }, secretKey, {
+      expiresIn: 86400, // 24 hours
+    });
+
+    res.status(200).json({
+      user: { ...signedUser },
+      accessToken: `Bearer ${token}`,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
 };
